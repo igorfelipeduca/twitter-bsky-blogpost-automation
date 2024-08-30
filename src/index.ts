@@ -193,7 +193,7 @@ server.post("/posts/:id/tweet", async (request, reply) => {
       return;
     }
 
-    initializeTwitterClient(accessToken);
+    initializeTwitterClient();
 
     const tweet = `${post.title}\n\n${
       post.content?.substring(0, 240) ?? ""
@@ -300,7 +300,7 @@ const start = async () => {
     await server.listen({ port, host: "0.0.0.0" });
     console.log(`Server listening on http://localhost:${port}`);
 
-    setInterval(async () => {
+    const checkAndPostTweets = async () => {
       try {
         const now = new Date();
         const posts = await Post.find({
@@ -315,7 +315,7 @@ const start = async () => {
             continue;
           }
 
-          initializeTwitterClient(accessToken);
+          initializeTwitterClient();
 
           const tweet = `${post.title}\n\n${
             post.content?.substring(0, 240) ?? ""
@@ -343,8 +343,12 @@ const start = async () => {
         }
       } catch (error) {
         logger.error(error, "Error occurred during automatic post checking");
+      } finally {
+        setTimeout(checkAndPostTweets, 5 * 60 * 1000);
       }
-    }, 5 * 60 * 1000);
+    };
+
+    checkAndPostTweets();
   } catch (err) {
     console.error(err);
     process.exit(1);

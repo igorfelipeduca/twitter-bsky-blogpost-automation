@@ -10,8 +10,8 @@ const logger = pino({
 
 let client: TwitterApi;
 
-export function initializeTwitterClient(bearerToken: string) {
-  client = new TwitterApi(bearerToken);
+export function initializeTwitterClient() {
+  client = new TwitterApi(process.env.TWITTER_ACCESS_TOKEN ?? "");
 }
 
 export async function sendTweet(content: string): Promise<void> {
