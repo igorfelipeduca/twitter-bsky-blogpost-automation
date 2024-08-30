@@ -48,13 +48,14 @@ server.get("/", async (request, reply) => {
 server.post("/posts/add", async (request, reply) => {
   try {
     logger.info("Received request to add a new post");
-    const { title, content, hashtags } = request.body as {
+    const { title, content, hashtags, postDate } = request.body as {
       title: string;
       content: string;
       hashtags: string[];
+      postDate?: string;
     };
 
-    logger.debug({ title, content, hashtags }, "Parsed request body");
+    logger.debug({ title, content, hashtags, postDate }, "Parsed request body");
 
     logger.info("Creating new Post instance");
 
@@ -62,7 +63,8 @@ server.post("/posts/add", async (request, reply) => {
       title,
       content,
       hashtags,
-      postDate: new Date(),
+      postDate: postDate ? new Date(postDate) : new Date(),
+      isPosted: false,
     });
 
     logger.info("Attempting to save new post to database");
@@ -87,9 +89,12 @@ server.post("/posts/add", async (request, reply) => {
 server.post("/posts/create", async (request, reply) => {
   try {
     logger.info("Received request to create a new post using GPT");
-    const { prompt } = request.body as { prompt: string };
+    const { prompt, postDate } = request.body as {
+      prompt: string;
+      postDate?: string;
+    };
 
-    logger.debug({ prompt }, "Parsed request body");
+    logger.debug({ prompt, postDate }, "Parsed request body");
 
     logger.info("Generating content using GPT");
     const generatedContent = await generateGPTResponse(prompt);
@@ -99,7 +104,8 @@ server.post("/posts/create", async (request, reply) => {
       title: prompt.substring(0, 50),
       content: generatedContent,
       hashtags: [],
-      postDate: new Date(),
+      postDate: postDate ? new Date(postDate) : new Date(),
+      isPosted: false,
     });
 
     logger.info("Attempting to save new post to database");
@@ -110,11 +116,58 @@ server.post("/posts/create", async (request, reply) => {
     reply
       .code(201)
       .send({ message: "Post created successfully", post: savedPost });
+
     logger.info({ postId: savedPost._id }, "Response sent to client");
   } catch (error) {
     logger.error(error, "Error occurred while creating the post");
     reply.code(500).send({
       error: "An error occurred while creating the post",
+      details: error as any,
+    });
+  }
+});
+
+server.put("/posts/:id", async (request, reply) => {
+  try {
+    const { id } = request.params as { id: string };
+    logger.info({ postId: id }, "Received request to edit a post");
+
+    const { title, content, hashtags, postDate } = request.body as {
+      title?: string;
+      content?: string;
+      hashtags?: string[];
+      postDate?: string;
+    };
+
+    logger.debug({ title, content, hashtags, postDate }, "Parsed request body");
+
+    const post = await Post.findById(id);
+
+    if (!post) {
+      logger.warn({ postId: id }, "Post not found");
+      reply.code(404).send({ error: "Post not found" });
+      return;
+    }
+
+    if (title) post.title = title;
+    if (content) post.content = content;
+    if (hashtags) post.hashtags = hashtags;
+    if (postDate) post.postDate = new Date(postDate);
+
+    logger.info("Attempting to save updated post to database");
+    const updatedPost = await post.save();
+
+    logger.info({ postId: updatedPost._id }, "Post updated successfully");
+
+    reply
+      .code(200)
+      .send({ message: "Post updated successfully", post: updatedPost });
+
+    logger.info({ postId: updatedPost._id }, "Response sent to client");
+  } catch (error) {
+    logger.error(error, "Error occurred while updating the post");
+    reply.code(500).send({
+      error: "An error occurred while updating the post",
       details: error as any,
     });
   }
@@ -126,7 +179,7 @@ server.post("/posts/:id/tweet", async (request, reply) => {
     logger.info({ postId: id }, "Received request to post to Twitter");
 
     const post = await Post.findById(id);
-    const accessToken = request.headers.authorization?.split("Bearer ")[1];
+    const accessToken = process.env.TWITTER_ACCESS_TOKEN;
 
     if (!post) {
       logger.warn({ postId: id }, "Post not found");
@@ -148,7 +201,13 @@ server.post("/posts/:id/tweet", async (request, reply) => {
 
     await sendTweet(tweet);
 
+    post.isPosted = true;
+    await post.save();
+
+    logger.info({ postId: id }, "Updated post isPosted status to true");
+
     reply.code(200).send({ message: "Successfully posted to Twitter" });
+
     logger.info(
       { postId: id },
       "Successfully posted to Twitter and response sent to client"
@@ -240,6 +299,52 @@ const start = async () => {
     const port = Number(process.env.PORT) || 8000;
     await server.listen({ port, host: "0.0.0.0" });
     console.log(`Server listening on http://localhost:${port}`);
+
+    setInterval(async () => {
+      try {
+        const now = new Date();
+        const posts = await Post.find({
+          isPosted: false,
+          postDate: { $lt: now },
+        });
+
+        for (const post of posts) {
+          const accessToken = process.env.TWITTER_ACCESS_TOKEN;
+          if (!accessToken) {
+            logger.error("No access token found for automatic tweeting");
+            continue;
+          }
+
+          initializeTwitterClient(accessToken);
+
+          const tweet = `${post.title}\n\n${
+            post.content?.substring(0, 240) ?? ""
+          }...`;
+
+          try {
+            await sendTweet(tweet);
+
+            post.isPosted = true;
+            await post.save();
+
+            logger.info(
+              { postId: post._id },
+              "Automatically posted to Twitter"
+            );
+          } catch (error) {
+            if (error instanceof ApiResponseError && error.code === 403) {
+              logger.error(
+                "Authentication error when posting tweet. User may need to re-authenticate."
+              );
+            } else {
+              logger.error(error, "Error occurred while posting tweet");
+            }
+          }
+        }
+      } catch (error) {
+        logger.error(error, "Error occurred during automatic post checking");
+      }
+    }, 5 * 60 * 1000);
   } catch (err) {
     console.error(err);
     process.exit(1);

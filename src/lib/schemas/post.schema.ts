@@ -5,6 +5,7 @@ const PostSchema = new mongoose.Schema({
   postDate: Date,
   content: String,
   hashtags: [String],
+  isPosted: Boolean,
 });
 
 export const Post = mongoose.model("Post", PostSchema);
