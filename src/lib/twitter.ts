@@ -8,12 +8,11 @@ const logger = pino({
   },
 });
 
-const client = new TwitterApi({
-  appKey: process.env.TWITTER_API_KEY ?? "",
-  appSecret: process.env.TWITTER_API_SECRET ?? "",
-  accessSecret: process.env.TWITTER_ACCESS_TOKEN ?? "",
-  accessToken: process.env.TWITTER_ACCESS_SECRET ?? "",
-});
+let client: TwitterApi;
+
+export function initializeTwitterClient(bearerToken: string) {
+  client = new TwitterApi(bearerToken);
+}
 
 export async function sendTweet(content: string): Promise<void> {
   try {
@@ -21,7 +20,15 @@ export async function sendTweet(content: string): Promise<void> {
     await client.v2.tweet(content);
     logger.info("Tweet sent successfully");
   } catch (error) {
-    logger.error({ error }, "Error sending tweet");
-    throw error;
+    if (error instanceof Error && "code" in error && error.code === 401) {
+      logger.error(
+        { error },
+        "Unauthorized: Twitter API credentials may be invalid"
+      );
+      throw new Error("Unauthorized: Twitter API credentials may be invalid");
+    } else {
+      logger.error({ error }, "Error sending tweet");
+      throw error;
+    }
   }
 }
