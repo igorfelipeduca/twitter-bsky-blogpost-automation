@@ -1,0 +1,25 @@
+{
+  "name": "twitter-blogpost-automation",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "fastify": "^4.28.1",
+    "mongoose": "^8.6.0",
+    "openai": "^4.57.0",
+    "pino": "^9.3.2",
+    "pino-pretty": "^11.2.2",
+    "tsx": "^4.19.0",
+    "twitter-api-v2": "^1.17.2",
+    "typescript": "^5.5.4"
+  },
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.1"
+  }
+}
