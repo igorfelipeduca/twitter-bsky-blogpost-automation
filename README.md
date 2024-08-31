@@ -1,6 +1,6 @@
-# Twitter Blogpost Automation
+# Twitter/Bluesky Blogpost Automation
 
-This project automates the process of creating blog posts and tweeting them using Fastify, MongoDB, and the Twitter API.
+This project automates the process of creating blog posts and tweeting them using Fastify, MongoDB, the Twitter API and the Bluesky API.
 
 ## Prerequisites
 
@@ -26,30 +26,37 @@ This project automates the process of creating blog posts and tweeting them usin
    npm install
    ```
 
-3. Create a `.env` file in the root directory and add the following environment variables:
+3.1. If you're willing to automate your twitter posts, create a `.env` file in the root directory and add the following environment variables:
 
-   ```env
-   PORT=8000
-   MONGODB_URI=mongodb://localhost:27017/yourdbname
-   TWITTER_API_KEY=your-twitter-api-key
-   TWITTER_API_SECRET=your-twitter-api-secret
-   TWITTER_ACCESS_TOKEN=your-twitter-access-token
-   TWITTER_ACCESS_SECRET=your-twitter-access-secret
-   TWITTER_BEARER_TOKEN=your-twitter-bearer-token
-   OPENAI_API_KEY=your-openai-api-key
-   TWITTER_OAUTH_CLIENT_KEY=your-twitter-client-key
-   TWITTER_OAUTH_CLIENT_SECRET=your-twitter-client-secret
-   TWITTER_OAUTH_CALLBACK_URL=http://localhost:8000/callback
-   ```
+```env
+TWITTER_API_KEY=
+TWITTER_API_SECRET=
+TWITTER_ACCESS_TOKEN=
+TWITTER_ACCESS_SECRET=
+TWITTER_BEARER_TOKEN=
+TWITTER_OAUTH_CLIENT_KEY=
+TWITTER_OAUTH_CLIENT_SECRET=
+TWITTER_OAUTH_CALLBACK_URL=
+TWITTER_ACCESS_TOKEN=
+```
 
-   You can obtain these keys and tokens from the Twitter Developer Dashboard.
+You can obtain these keys and tokens from the Twitter Developer Dashboard.
+
+3.2. If you're willing to automate your bluesky posts, create a `.env` file in the root directory and add the following environment variables:
+
+```env
+BSKY_HANDLE=
+BSKY_PASSWORD=
+```
+
+These keys are the login information you use to sign in your account.
 
 ## Running the Project
 
 1. Start the server:
 
    ```sh
-   npm start
+   yarn dev
    ```
 
 2. The server will be running at `http://localhost:8000`.
@@ -68,11 +75,17 @@ This project automates the process of creating blog posts and tweeting them usin
 
 ## Authentication
 
+## Twitter authentication
+
 1. Navigate to `http://localhost:8000/auth/twitter` to initiate the Twitter OAuth flow.
 2. After successful authentication, you will be redirected to the callback URL, and your access token will be
    displayed in the browser. Copy it and paste in the .env `TWITTER_ACCESS_TOKEN`.
 
-## Using Ngrok for Local Development
+## Bsky authentication
+
+Once you've passed all required bsky envs (handle and password) you're already good to go.
+
+## Using Ngrok for Local Development (twitter-only)
 
 To use Ngrok for local development, follow these steps:
 
@@ -92,68 +105,206 @@ To use Ngrok for local development, follow these steps:
 
 4. Update your `.env` file with the new callback URL.
 
-## Endpoints
+## Postman collection
 
-### Create a New Post
-
-- **URL:** `/posts/add`
-- **Method:** `POST`
-- **Body:**
-  ```json
-  {
-    "title": "Your Post Title",
-    "content": "Your post content",
-    "hashtags": ["tag1", "tag2"]
-  }
-  ```
-- **Response:**
-  ```json
-  {
-    "message": "Post created successfully",
-    "post": { ... }
-  }
-  ```
-
-### Create a New Post Using GPT
-
-- **URL:** `/posts/create`
-- **Method:** `POST`
-- **Body:**
-  ```json
-  {
-    "prompt": "Your GPT prompt"
-  }
-  ```
-- **Response:**
-  ```json
-  {
-    "message": "Post created successfully",
-    "post": { ... }
-  }
-  ```
-
-### Tweet a Post
-
-- **URL:** `/posts/:id/tweet`
-- **Method:** `POST`
-- **Response:**
-  ```json
-  {
-    "message": "Successfully posted to Twitter"
-  }
-  ```
-
-### Get Recent Posts
-
-- **URL:** `/posts`
-- **Method:** `GET`
-- **Response:**
-  ```json
-  [
-    { ... },
-    { ... }
+```json
+{
+  "info": {
+    "_postman_id": "d120d597-833b-4264-903e-03fc3ee88ee2",
+    "name": "Twitter/Bsky BlogPost Scheduler",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "10880151",
+    "_collection_link": "https://igorfelipeduca.postman.co/workspace/Duca's-Workspace~4a387d03-407e-4328-8f39-876d5a45807b/collection/10880151-d120d597-833b-4264-903e-03fc3ee88ee2?action=share&source=collection_link&creator=10880151"
+  },
+  "item": [
+    {
+      "name": "Posts",
+      "item": [
+        {
+          "name": "Create post",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"escreva um post curto em portugues, quero que esse post tenha um formato adequado para tweets. esse post precisa falar sobre IA na vida das pessoas\",\n  \"postDate\": \"2024-08-30T21:53:56.349056Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8000/posts/create",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["posts", "create"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add post to database",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"\",\n  \"content\": \"testando\",\n  \"hashtags\": [],\n  \"postDate\": \"2024-08-30T21:53:56.349056Z\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8000/posts/add",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["posts", "add"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Retrieve all posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/posts",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["posts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Edit post",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"content\": \"testando api ao vivo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8000/posts/:id",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["posts", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "66d23e855cdafd5df55f19ba"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Twitter",
+      "item": [
+        {
+          "name": "Tweet post",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/posts/:id/tweet",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["posts", ":id", "tweet"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "66d23e855cdafd5df55f19ba"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bsky",
+      "item": [
+        {
+          "name": "Post on Bsky",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"content\": \"test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8000/bsky/post",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["bsky", "post"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Hello",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8000",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8000"
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [""]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "packages": {},
+        "exec": [""]
+      }
+    }
   ]
-  ```
+}
+```
 
 ## License
 
