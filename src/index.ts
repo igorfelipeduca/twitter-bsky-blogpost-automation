@@ -128,6 +128,28 @@ server.post("/posts/create", async (request, reply) => {
   }
 });
 
+server.post("/gpt/generate", async (request, reply) => {
+  try {
+    logger.info("Received request to generate text using GPT");
+    const { prompt } = request.body as { prompt: string };
+
+    logger.debug({ prompt }, "Parsed request body");
+
+    logger.info("Generating content using GPT");
+    const generatedContent = await generateGPTResponse(prompt);
+
+    reply.code(200).send({ content: generatedContent });
+
+    logger.info("Generated content sent to client");
+  } catch (error) {
+    logger.error(error, "Error occurred while generating text with GPT");
+    reply.code(500).send({
+      error: "An error occurred while generating text",
+      details: error as any,
+    });
+  }
+});
+
 server.put("/posts/:id", async (request, reply) => {
   try {
     const { id } = request.params as { id: string };
@@ -275,7 +297,7 @@ server.post("/bsky/post", async (request, reply) => {
     logger.error(error, "Error occurred while posting to Bluesky");
     reply.code(500).send({
       error: "An error occurred while posting to Bluesky",
-      details: error as any,
+      details: error instanceof Error ? error.message : String(error),
     });
   }
 });

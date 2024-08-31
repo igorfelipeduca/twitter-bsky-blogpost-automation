@@ -25,12 +25,16 @@ export const sendBlueskyPost = async (content: string) => {
       },
     });
 
+    console.log({ response });
+
     if (response.success) {
       console.log("Post successfully sent to Bluesky");
     } else {
       console.error("Failed to send post to Bluesky", response);
     }
   } catch (error) {
-    console.error("Error occurred while sending post to Bluesky", error);
+    const errorMessage = (error as Error).message;
+
+    throw new Error(errorMessage);
   }
 };
