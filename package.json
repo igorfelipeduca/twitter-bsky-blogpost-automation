@@ -4,6 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "@atproto/api": "^0.13.5",
     "@fastify/cookie": "^9.4.0",
     "@fastify/session": "^10.9.0",
     "dotenv": "^16.4.5",

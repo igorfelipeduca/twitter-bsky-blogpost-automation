@@ -4,6 +4,7 @@ import { Post } from "./lib/schemas/post.schema";
 import { connectToDatabase } from "./lib/db";
 import { generateGPTResponse } from "./lib/gpt";
 import { sendTweet, initializeTwitterClient } from "./lib/twitter";
+import { sendBlueskyPost } from "./bsky";
 import { ApiResponseError, TwitterApi } from "twitter-api-v2";
 import fastifySession from "@fastify/session";
 import fastifyCookie from "@fastify/cookie";
@@ -221,6 +222,64 @@ server.post("/posts/:id/tweet", async (request, reply) => {
   }
 });
 
+server.post("/posts/:id/bsky", async (request, reply) => {
+  try {
+    const { id } = request.params as { id: string };
+    logger.info({ postId: id }, "Received request to post to Bluesky");
+
+    const post = await Post.findById(id);
+
+    if (!post) {
+      logger.warn({ postId: id }, "Post not found");
+      reply.code(404).send({ error: "Post not found" });
+      return;
+    }
+
+    const blueskyPostContent = `${post.title}\n\n${
+      post.content?.substring(0, 240) ?? ""
+    }...`;
+
+    await sendBlueskyPost(blueskyPostContent);
+
+    post.isPosted = true;
+    await post.save();
+
+    logger.info({ postId: id }, "Updated post isPosted status to true");
+
+    reply.code(200).send({ message: "Successfully posted to Bluesky" });
+
+    logger.info(
+      { postId: id },
+      "Successfully posted to Bluesky and response sent to client"
+    );
+  } catch (error) {
+    logger.error(error, "Error occurred while posting to Bluesky");
+    reply.code(500).send({
+      error: "An error occurred while posting to Bluesky",
+      details: error as any,
+    });
+  }
+});
+
+server.post("/bsky/post", async (request, reply) => {
+  try {
+    const { content } = request.body as { content: string };
+    logger.info("Received request to post to Bluesky");
+
+    await sendBlueskyPost(content);
+
+    reply.code(200).send({ message: "Successfully posted to Bluesky" });
+
+    logger.info("Successfully posted to Bluesky and response sent to client");
+  } catch (error) {
+    logger.error(error, "Error occurred while posting to Bluesky");
+    reply.code(500).send({
+      error: "An error occurred while posting to Bluesky",
+      details: error as any,
+    });
+  }
+});
+
 server.get("/auth/twitter", async (request, reply) => {
   try {
     const { url, codeVerifier, state } = await client.generateOAuth2AuthLink(
@@ -300,7 +359,7 @@ const start = async () => {
     await server.listen({ port, host: "0.0.0.0" });
     console.log(`Server listening on http://localhost:${port}`);
 
-    const checkAndPostTweets = async () => {
+    const checkAndPostBlueskyPosts = async () => {
       try {
         const now = new Date();
         const posts = await Post.find({
@@ -309,46 +368,32 @@ const start = async () => {
         });
 
         for (const post of posts) {
-          const accessToken = process.env.TWITTER_ACCESS_TOKEN;
-          if (!accessToken) {
-            logger.error("No access token found for automatic tweeting");
-            continue;
-          }
-
-          initializeTwitterClient();
-
-          const tweet = `${post.title}\n\n${
+          const content = `${post.title}\n\n${
             post.content?.substring(0, 240) ?? ""
           }...`;
 
           try {
-            await sendTweet(tweet);
+            await sendBlueskyPost(content);
 
             post.isPosted = true;
             await post.save();
 
             logger.info(
               { postId: post._id },
-              "Automatically posted to Twitter"
+              "Automatically posted to Bluesky"
             );
           } catch (error) {
-            if (error instanceof ApiResponseError && error.code === 403) {
-              logger.error(
-                "Authentication error when posting tweet. User may need to re-authenticate."
-              );
-            } else {
-              logger.error(error, "Error occurred while posting tweet");
-            }
+            logger.error(error, "Error occurred while posting to Bluesky");
           }
         }
       } catch (error) {
         logger.error(error, "Error occurred during automatic post checking");
       } finally {
-        setTimeout(checkAndPostTweets, 5 * 60 * 1000);
+        setTimeout(checkAndPostBlueskyPosts, 5 * 60 * 1000);
       }
     };
 
-    checkAndPostTweets();
+    checkAndPostBlueskyPosts();
   } catch (err) {
     console.error(err);
     process.exit(1);
