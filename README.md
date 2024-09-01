@@ -251,7 +251,7 @@ To use Ngrok for local development, follow these steps:
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"content\": \"test\"\n}",
+              "raw": "{\n    \"content\": \"golang, aka go, is considered a procedural language because it follows a step-by-step approach to break down a task into a collection of variables, procedures, and routines, or functions. this means, in go, blocks of code are organized into procedures (functions) that can be used and reused, making it easier to debug and maintain. also, go has a strong focus on concurrency, which is a big plus for procedural programming. so, yeah, that's why go is seen as a procedural language. remember, it's not just about the language, it's about how you use it.\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -264,6 +264,55 @@ To use Ngrok for local development, follow these steps:
               "host": ["localhost"],
               "port": "8000",
               "path": ["bsky", "post"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AI",
+      "item": [
+        {
+          "name": "Generate text with GPT",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"prompt\": \"please generate a thread explaining the decentralized architecture of the bluesky network. keep the text casual and concise, using only lowercase. focus on how the architecture empowers users and promotes a more open internet. finish the thread with a question to engage followers.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8000/gpt/generate",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["gpt", "generate"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Threads",
+      "item": [
+        {
+          "name": "Post bsky thread",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8000/bsky/thread",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["bsky", "thread"]
             }
           },
           "response": []
