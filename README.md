@@ -300,19 +300,52 @@ To use Ngrok for local development, follow these steps:
       ]
     },
     {
-      "name": "Threads",
+      "name": "Bsky Threads",
       "item": [
         {
           "name": "Post bsky thread",
           "request": {
             "method": "POST",
             "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"text\": \"procedural programming is a straightforward approach where you break down a task into a series of step-by-step instructions, or procedures, making your code easy to follow and maintain. this method empowers users by giving them full control over the flow of their programs, leading to more transparent and accessible software. when code is clear and logical, it promotes collaboration and innovation, contributing to a more open and user-driven internet. what do you think are the biggest benefits of procedural programming in today's tech landscape?\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "http://localhost:8000/bsky/thread",
               "protocol": "http",
               "host": ["localhost"],
               "port": "8000",
               "path": ["bsky", "thread"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate thread with AI",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"subject\": \"python for machine learning\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8000/bsky/thread/generate",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8000",
+              "path": ["bsky", "thread", "generate"]
             }
           },
           "response": []

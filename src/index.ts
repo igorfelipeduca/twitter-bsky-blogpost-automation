@@ -12,6 +12,7 @@ import crypto from "crypto";
 import { FastifyRequest } from "fastify";
 import { CodeVerifier } from "./lib/schemas/code-verifier.schema";
 import { postBskyThread } from "./bsky"; // Import the function
+import { getBskyPrompt } from "./utils/bsky-prompt";
 
 declare module "fastify" {
   interface Session {
@@ -320,6 +321,39 @@ server.post("/bsky/thread", async (request, reply) => {
     logger.error(error, "Error occurred while posting thread to Bluesky");
     reply.code(500).send({
       error: "An error occurred while posting thread to Bluesky",
+      details: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+server.post("/bsky/thread/generate", async (request, reply) => {
+  try {
+    const { subject } = request.body as { subject: string };
+    logger.info("Received request to generate and post a thread to Bluesky");
+
+    logger.info(`Generating prompt based on subject: ${subject}`);
+    const bskyPrompt = getBskyPrompt(subject);
+    const generatedText = await generateGPTResponse(bskyPrompt);
+
+    logger.info(`Generated text: ${generatedText}`);
+
+    const agent = await initializeBskyAgent();
+    await postBskyThread(generatedText, agent);
+
+    reply
+      .code(200)
+      .send({ message: "Successfully generated and posted thread to Bluesky" });
+
+    logger.info(
+      "Successfully generated and posted thread to Bluesky and response sent to client"
+    );
+  } catch (error) {
+    logger.error(
+      error,
+      "Error occurred while generating or posting thread to Bluesky"
+    );
+    reply.code(500).send({
+      error: "An error occurred while generating or posting thread to Bluesky",
       details: error instanceof Error ? error.message : String(error),
     });
   }
