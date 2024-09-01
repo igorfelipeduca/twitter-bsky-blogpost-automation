@@ -4,13 +4,14 @@ import { Post } from "./lib/schemas/post.schema";
 import { connectToDatabase } from "./lib/db";
 import { generateGPTResponse } from "./lib/gpt";
 import { sendTweet, initializeTwitterClient } from "./lib/twitter";
-import { sendBlueskyPost } from "./bsky";
+import { initializeBskyAgent, sendBlueskyPost } from "./bsky";
 import { ApiResponseError, TwitterApi } from "twitter-api-v2";
 import fastifySession from "@fastify/session";
 import fastifyCookie from "@fastify/cookie";
 import crypto from "crypto";
 import { FastifyRequest } from "fastify";
 import { CodeVerifier } from "./lib/schemas/code-verifier.schema";
+import { postBskyThread } from "./bsky"; // Import the function
 
 declare module "fastify" {
   interface Session {
@@ -297,6 +298,28 @@ server.post("/bsky/post", async (request, reply) => {
     logger.error(error, "Error occurred while posting to Bluesky");
     reply.code(500).send({
       error: "An error occurred while posting to Bluesky",
+      details: error instanceof Error ? error.message : String(error),
+    });
+  }
+});
+
+server.post("/bsky/thread", async (request, reply) => {
+  try {
+    const { text } = request.body as { text: string };
+    logger.info("Received request to post a thread to Bluesky");
+
+    const agent = await initializeBskyAgent();
+    await postBskyThread(text, agent);
+
+    reply.code(200).send({ message: "Successfully posted thread to Bluesky" });
+
+    logger.info(
+      "Successfully posted thread to Bluesky and response sent to client"
+    );
+  } catch (error) {
+    logger.error(error, "Error occurred while posting thread to Bluesky");
+    reply.code(500).send({
+      error: "An error occurred while posting thread to Bluesky",
       details: error instanceof Error ? error.message : String(error),
     });
   }
