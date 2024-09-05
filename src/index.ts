@@ -328,17 +328,17 @@ server.post("/bsky/thread", async (request, reply) => {
 
 server.post("/bsky/thread/generate", async (request, reply) => {
   try {
-    const { subject } = request.body as { subject: string };
+    const { subject, lang } = request.body as { subject: string; lang: string };
     logger.info("Received request to generate and post a thread to Bluesky");
 
     logger.info(`Generating prompt based on subject: ${subject}`);
-    const bskyPrompt = getBskyPrompt(subject);
+    const bskyPrompt = getBskyPrompt(subject, lang ?? "en-US");
     const generatedText = await generateGPTResponse(bskyPrompt);
 
     logger.info(`Generated text: ${generatedText}`);
 
     const agent = await initializeBskyAgent();
-    await postBskyThread(generatedText, agent);
+    await postBskyThread(`🤖 GENERATED WITH AI\n\n${generatedText}`, agent);
 
     reply
       .code(200)
